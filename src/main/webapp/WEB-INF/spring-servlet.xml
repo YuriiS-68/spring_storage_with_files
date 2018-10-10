@@ -34,4 +34,8 @@
 
     </bean>
 
+    <!--<bean id="file" class="dz_spring_3.model.File">
+
+    </bean>-->
+
 </beans>

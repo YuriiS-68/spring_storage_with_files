@@ -11,14 +11,39 @@ public class ServiceFile {
     @Autowired
     FileDAO fileDAO;
 
+    public File findById(long id){
+
+        return fileDAO.findById(id);
+    }
+
     public void delete(Long id) {
 
         fileDAO.delete(id);
+    }
+
+    public Long getStorageId(Long idFile){
+
+        return fileDAO.getStorageId(idFile);
+    }
+
+    public Long sumSizeFilesInStorage(Long idStorage){
+
+        return fileDAO.sumSizeFilesInStorage(idStorage);
     }
 
     @SuppressWarnings("unchecked")
     public List<File> getAllObjects(){
 
         return fileDAO.getAllFile();
+    }
+
+    public List<File> getFilesInStorage(Long storageId){
+
+        return fileDAO.getFilesInStorage(storageId);
+    }
+
+    public void updateAll(List<File> files){
+
+        fileDAO.updateAll(files);
     }
 }

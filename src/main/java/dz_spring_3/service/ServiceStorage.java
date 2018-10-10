@@ -11,6 +11,11 @@ public class ServiceStorage {
     @Autowired
     StorageDAO storageDAO;
 
+    public Storage findById(long id){
+
+        return storageDAO.findById(id);
+    }
+
     public void delete(Long id){
 
         storageDAO.delete(id);

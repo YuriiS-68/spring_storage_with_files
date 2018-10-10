@@ -92,22 +92,19 @@ public class GeneralDAO<T extends IdEntity> {
     @SuppressWarnings("unchecked")
     T findById(Long id, String sql){
 
-        T t;
-
         try(Session session = createSessionFactory().openSession()) {
 
             NativeQuery query = session.createNativeQuery(sql);
             if (getSingleResult(query, id) == null){
-                t = null;
+                return null;
             }
             else
-                t = (T) query.addEntity(type).setParameter(1, id).getSingleResult();
+                return  (T) query.addEntity(type).setParameter(1, id).getSingleResult();
 
         }catch (HibernateException e){
             System.err.println(e.getMessage());
             throw new HibernateException("Operation failed.");
         }
-        return t;
     }
 
     private <T> T getSingleResult(TypedQuery<T> query, Long id){

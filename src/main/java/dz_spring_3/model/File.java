@@ -3,6 +3,7 @@ package dz_spring_3.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dz_spring_3.BadRequestException;
 
 import javax.persistence.*;
 import java.io.IOException;
@@ -18,10 +19,12 @@ public class File extends IdEntity {
     private Long size;
     private Storage storage;
 
+
+
     public File() {
     }
 
-    public File(Long id, String name, String format, Long size, Storage storage) {
+    public File(Long id, String name, String format, Long size, Storage storage){
         this.id = id;
         this.name = name;
         this.format = format;
@@ -70,15 +73,26 @@ public class File extends IdEntity {
         }catch (IOException e){
             e.printStackTrace();
         }
-
         return file;
+    }
+
+    private static boolean checkNameFile(String name){
+
+        return !name.isEmpty() && name.length() <= 10;
     }
 
     public void setId(Long id) {
         this.id = id;
     }
 
-    public void setName(String name) {
+    public void setName(String name)throws BadRequestException{
+        if (!checkNameFile(name))
+            try {
+                throw new BadRequestException ("File name can't be more 10 chars. File with this name can't be created");
+            } catch (BadRequestException e) {
+                System.err.println(e.getMessage());
+                throw e;
+            }
         this.name = name;
     }
 

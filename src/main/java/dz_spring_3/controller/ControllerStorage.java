@@ -6,6 +6,7 @@ import dz_spring_3.dao.FileDAO;
 import dz_spring_3.dao.StorageDAO;
 import dz_spring_3.model.File;
 import dz_spring_3.model.Storage;
+import dz_spring_3.service.ServiceFile;
 import dz_spring_3.service.ServiceGeneral;
 import dz_spring_3.service.ServiceStorage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +26,10 @@ public class ControllerStorage {
     ServiceStorage serviceStorage;
 
     @Autowired
-    StorageDAO storageDAO;
+    ServiceFile serviceFile;
 
     @Autowired
     ServiceGeneral serviceGeneral;
-
-    @Autowired
-    FileDAO fileDAO;
 
     @SuppressWarnings("unchecked")
     @RequestMapping(method = RequestMethod.POST, value = "/saveStorage", produces = "text/plain")
@@ -68,7 +66,7 @@ public class ControllerStorage {
         Storage storage = mappingStorage(req);
 
         try {
-            if (storageDAO.findById(storage.getId()) != null){
+            if (serviceStorage.findById(storage.getId()) != null){
 
                 serviceGeneral.update(storage);
 
@@ -87,13 +85,13 @@ public class ControllerStorage {
     @ResponseBody
     public String deleteStorage(Long id){
 
-        List<File> files = fileDAO.getFilesInStorage(id);
+        List<File> files = serviceFile.getFilesInStorage(id);
 
         try {
             if (files.size() > 0)
                 throw new BadRequestException("The storage with id: " + id + " contains files.");
 
-            if (storageDAO.findById(id) != null){
+            if (serviceStorage.findById(id) != null){
 
                 serviceStorage.delete(id);
 

@@ -3,11 +3,10 @@ package dz_spring_3.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dz_spring_3.BadRequestException;
 import dz_spring_3.service.ServiceFile;
-import dz_spring_3.dao.FileDAO;
-import dz_spring_3.dao.StorageDAO;
 import dz_spring_3.model.File;
 import dz_spring_3.model.Storage;
 import dz_spring_3.service.ServiceGeneral;
+import dz_spring_3.service.ServiceStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -28,14 +27,10 @@ public class ControllerFile {
     ServiceFile serviceFile;
 
     @Autowired
-    FileDAO fileDAO;
-
-    @Autowired
-    StorageDAO storageDAO;
+    ServiceStorage serviceStorage;
 
     @Autowired
     ServiceGeneral serviceGeneral;
-
 
     @SuppressWarnings("unchecked")
     @RequestMapping(method = RequestMethod.POST, value = "/saveFile", produces = "text/plain")
@@ -44,10 +39,13 @@ public class ControllerFile {
 
         File file = mappingFile(req);
 
+        if (file == null)
+            return "File name can't be more 10 chars. File with this name can't be created";
+
         try {
+
             if (file.getId() == null){
 
-                checkNameFile(file.getName());
                 serviceGeneral.save(file);
             }
             else
@@ -74,18 +72,19 @@ public class ControllerFile {
         File file = mappingFile(req);
         long storageId;
 
-        try {
-            checkNameFile(file.getName());
+        if (file == null)
+            return "File name can't be more 10 chars. File with this name can't be created";
 
-            if (fileDAO.getStorageId(file.getId()) == null){
+        try {
+            if (serviceFile.getStorageId(file.getId()) == null){
                 storageId = 0;
             }
             else
-                storageId = fileDAO.getStorageId(file.getId());
+                storageId = serviceFile.getStorageId(file.getId());
 
-            file.setStorage(storageDAO.findById(storageId));
+            file.setStorage(serviceStorage.findById(storageId));
 
-            if (fileDAO.findById(file.getId()) != null){
+            if (serviceFile.findById(file.getId()) != null){
 
                 serviceGeneral.update(file);
 
@@ -103,19 +102,14 @@ public class ControllerFile {
     @RequestMapping(method = RequestMethod.DELETE, value = "/deleteFile", produces = "text/plain")
     @ResponseBody
     public String deleteFile(HttpServletRequest req){
-        File file;
-        Storage storage;
+
+        File file = serviceFile.findById(Long.parseLong(req.getParameter("fileId")));
+        Storage storage = serviceStorage.findById(Long.parseLong(req.getParameter("storage")));
 
         try {
-            if (fileDAO.findById(Long.parseLong(req.getParameter("fileId"))) == null ||
-                    storageDAO.findById(Long.parseLong(req.getParameter("storage"))) == null){
 
+            if (file == null || storage == null)
                 throw new BadRequestException("The storage or file is not in the database.");
-            }
-            else {
-                file = fileDAO.findById(Long.parseLong(req.getParameter("fileId")));
-                storage = storageDAO.findById(Long.parseLong(req.getParameter("storage")));
-            }
 
             if (file.getStorage().getId().equals(storage.getId())){
 
@@ -140,18 +134,16 @@ public class ControllerFile {
         //проверить свободное место в хранилище
         //проверить совместимость форматов файла и хранилища
         File file = mappingFile(req);
-        Storage storage;
+        Storage storage = serviceStorage.findById(Long.parseLong(req.getParameter("storageId")));
+
+        if (file == null)
+            return "File name can't be more 10 chars. File with this name can't be created";
 
         try {
-            checkNameFile(file.getName());
-
-            if (storageDAO.findById(Long.parseLong(req.getParameter("storageId"))) == null) {
+            if (storage == null)
                 throw new BadRequestException("The storage is not in the database.");
-            }
-            else
-                storage = storageDAO.findById(Long.parseLong(req.getParameter("storageId")));
 
-            if (checkFileInStorage(file, storage)){
+            if (!checkFileInStorage(file, storage.getId())){
                 file.setStorage(storage);
             }
             else
@@ -176,26 +168,21 @@ public class ControllerFile {
         //проверить есть ли уже в новом хранилище файл с таким id
         //проверить поддерживает ли хранилище формат переносимого файла
         //проверить хватит ли свободного места в новом хранилище для файла
-        File file;
-        Storage storageFrom;
-        Storage storageTo;
+        File file = serviceFile.findById(Long.parseLong(req.getParameter("fileId")));
+        Storage storageFrom = serviceStorage.findById(Long.parseLong(req.getParameter("storageFrom")));
+        Storage storageTo = serviceStorage.findById(Long.parseLong(req.getParameter("storageTo")));
 
         try {
-            if (fileDAO.findById(Long.parseLong(req.getParameter("fileId"))) == null ||
-                    storageDAO.findById(Long.parseLong(req.getParameter("storageTo"))) == null ||
-                    storageDAO.findById(Long.parseLong(req.getParameter("storageFrom"))) == null){
-
+            if (file == null || storageTo == null || storageFrom == null)
                 throw new BadRequestException("The storage or file is not in the database.");
-            }
-            else {
-                file = fileDAO.findById(Long.parseLong(req.getParameter("fileId")));
-                storageTo = storageDAO.findById(Long.parseLong(req.getParameter("storageTo")));
-                storageFrom = storageDAO.findById(Long.parseLong(req.getParameter("storageFrom")));
-            }
 
-            if (checkFileInStorages(file, storageFrom, storageTo)) {
-                file.setStorage(storageTo);
-            }
+            if (!checkFileInStorage(file, storageFrom.getId()))
+                throw new BadRequestException("File with id " + file.getId() + " was not found in the storage with id " + storageFrom.getId());
+
+            if (checkFileInStorage(file, storageTo.getId()))
+                throw new BadRequestException("File with id " + file.getId() + " already exists in the storage with id: " + storageTo.getId());
+
+            file.setStorage(storageTo);
 
             validate(storageTo, file);
 
@@ -215,18 +202,13 @@ public class ControllerFile {
         //проверить есть ли все файлы в storageFrom и нет ли переносимых фалов в storageTo
         //проверить хватит ли места для файлов в storageTo
         //проверить файлы и storageTo на совместимость форматов
-        List<File> files;
-        Storage storageTo;
+        List<File> files = serviceFile.getFilesInStorage(Long.parseLong(req.getParameter("storageFrom")));
+        Storage storageTo = serviceStorage.findById(Long.parseLong(req.getParameter("storageTo")));
+        Storage storageFrom = serviceStorage.findById(Long.parseLong(req.getParameter("storageFrom")));
 
         try {
-            if (storageDAO.findById(Long.parseLong(req.getParameter("storageTo"))) == null ||
-                    storageDAO.findById(Long.parseLong(req.getParameter("storageFrom"))) == null){
+            if (storageTo == null || storageFrom == null)
                 throw new BadRequestException("The storageTo or storageFrom is not in the database.");
-            }
-            else {
-                storageTo = storageDAO.findById(Long.parseLong(req.getParameter("storageTo")));
-                files = fileDAO.getFilesInStorage(Long.parseLong(req.getParameter("storageFrom")));
-            }
 
             validateTransferAll(storageTo, files);
 
@@ -241,7 +223,7 @@ public class ControllerFile {
             }
         }
 
-        fileDAO.updateAll(files);
+        serviceFile.updateAll(files);
 
         return "All files were successfully transferred to the storage with id: " + storageTo.getId();
     }
@@ -316,17 +298,17 @@ public class ControllerFile {
         return storageFormats.containsAll(fileFormats);
     }
 
-    private boolean checkFilesInStorages(List<File> files, Storage storageTo)throws BadRequestException{
+    private boolean checkFilesInStorages(List<File> files, Storage storage)throws BadRequestException{
         for (File file : files){
-            if (file != null && file.getStorage().getId().equals(storageTo.getId())){
-                throw new BadRequestException("File with id: " + file.getId() + " already exist in the storage with id: " + storageTo.getId());
+            if (file != null && file.getStorage().getId().equals(storage.getId())){
+                throw new BadRequestException("File with id: " + file.getId() + " already exist in the storage with id: " + storage.getId());
             }
         }
         return true;
     }
 
     private boolean checkFreeSpaceForTransferFiles(List<File> files, Storage storageTo){
-        long sumInStorageTo = fileDAO.sumSizeFilesInStorage(storageTo.getId());
+        long sumInStorageTo = serviceFile.sumSizeFilesInStorage(storageTo.getId());
         long sum = 0;
 
         for (File file : files){
@@ -337,40 +319,17 @@ public class ControllerFile {
         return (storageTo.getStorageSize() - sumInStorageTo) >= sum || sumInStorageTo == 0;
     }
 
-    private boolean checkFileInStorages(File file, Storage storageFrom, Storage storageTo)throws BadRequestException{
+    private boolean checkFileInStorage(File file, Long storageId){
 
-        if (file.getStorage().getId() == null || file.getStorage().getId() != null && !file.getStorage().getId().equals(storageFrom.getId())) {
-            throw new BadRequestException("File with id " + file.getId() + " is not in storage with id " + storageFrom.getId());
-        }
-
-        if (file.getStorage().getId() != null && file.getStorage().getId().equals(storageTo.getId())){
-            throw new BadRequestException("File with id: " + file.getId() + " already exist in the storage with id: " + storageTo.getId());
-        }
-        return true;
-    }
-
-    private boolean checkFileInStorage(File file, Storage storage)throws BadRequestException{
-
-        File fileFound = fileDAO.findById(file.getId());
-
-        if (fileFound == null || fileFound.getStorage() == null)
-            throw new BadRequestException("File with id " + file.getId() + " was not found in the database.");
-
-        return  !fileFound.getStorage().getId().equals(storage.getId());
-
+        return file.getStorage().getId().equals(storageId);
     }
 
     private boolean checkFreeSpace(Storage storage, File file){
         //сделать запрос в базу данных и просуммировать размеры файлов в одном хранилище
         //от размера хранилища отнять сумму размеров файлов
-        long sum = fileDAO.sumSizeFilesInStorage(storage.getId());
+        long sum = serviceFile.sumSizeFilesInStorage(storage.getId());
 
         return storage.getStorageSize() - sum >= file.getSize() || sum == 0;
-    }
-
-    private static void checkNameFile(String name)throws BadRequestException{
-        if (name.isEmpty() || name.length() > 10)
-            throw new BadRequestException ("File name can't be more 10 chars. File with this name can't be created");
     }
 
     private File mappingFile(HttpServletRequest req)throws IOException {
