@@ -23,14 +23,16 @@ import java.util.Set;
 @org.springframework.stereotype.Controller
 public class ControllerFile {
 
-    @Autowired
-    ServiceFile serviceFile;
+    private ServiceFile serviceFile;
+    private ServiceStorage serviceStorage;
+    private ServiceGeneral serviceGeneral;
 
     @Autowired
-    ServiceStorage serviceStorage;
-
-    @Autowired
-    ServiceGeneral serviceGeneral;
+    public ControllerFile(ServiceFile serviceFile, ServiceStorage serviceStorage, ServiceGeneral serviceGeneral) {
+        this.serviceFile = serviceFile;
+        this.serviceStorage = serviceStorage;
+        this.serviceGeneral = serviceGeneral;
+    }
 
     @SuppressWarnings("unchecked")
     @RequestMapping(method = RequestMethod.POST, value = "/saveFile", produces = "text/plain")
@@ -321,7 +323,7 @@ public class ControllerFile {
 
     private boolean checkFileInStorage(File file, Long storageId){
 
-        return file.getStorage().getId().equals(storageId);
+        return file.getStorage() != null && file.getStorage().getId().equals(storageId);
     }
 
     private boolean checkFreeSpace(Storage storage, File file){

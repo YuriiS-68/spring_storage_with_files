@@ -3,13 +3,19 @@ package dz_spring_3.service;
 import dz_spring_3.dao.FileDAO;
 import dz_spring_3.model.File;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public class ServiceFile {
 
+    private FileDAO fileDAO;
+
     @Autowired
-    FileDAO fileDAO;
+    public ServiceFile(FileDAO fileDAO) {
+        this.fileDAO = fileDAO;
+    }
 
     public File findById(long id){
 

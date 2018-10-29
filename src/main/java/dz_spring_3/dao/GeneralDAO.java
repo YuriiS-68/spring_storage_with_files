@@ -7,10 +7,12 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.query.NativeQuery;
+import org.springframework.stereotype.Repository;
 
 import javax.persistence.TypedQuery;
 import java.util.List;
 
+@Repository
 public class GeneralDAO<T extends IdEntity> {
     
     private static SessionFactory sessionFactory;

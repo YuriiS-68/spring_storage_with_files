@@ -5,10 +5,12 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
+import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Repository
 public class FileDAO extends GeneralDAO<File> {
 
     private static final String SQL_GET_ALL_FILES = "SELECT * FROM FILE_";

@@ -1,9 +1,11 @@
 package dz_spring_3.dao;
 
 import dz_spring_3.model.Storage;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public class StorageDAO extends GeneralDAO<Storage> {
 
     private static final String SQL_GET_ALL_STORAGE = "SELECT * FROM STORAGE_";

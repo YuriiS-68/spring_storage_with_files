@@ -2,8 +2,6 @@ package dz_spring_3.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dz_spring_3.BadRequestException;
-import dz_spring_3.dao.FileDAO;
-import dz_spring_3.dao.StorageDAO;
 import dz_spring_3.model.File;
 import dz_spring_3.model.Storage;
 import dz_spring_3.service.ServiceFile;
@@ -22,14 +20,16 @@ import java.util.List;
 @org.springframework.stereotype.Controller
 public class ControllerStorage {
 
-    @Autowired
-    ServiceStorage serviceStorage;
+    private ServiceStorage serviceStorage;
+    private ServiceFile serviceFile;
+    private ServiceGeneral serviceGeneral;
 
     @Autowired
-    ServiceFile serviceFile;
-
-    @Autowired
-    ServiceGeneral serviceGeneral;
+    public ControllerStorage(ServiceStorage serviceStorage, ServiceFile serviceFile, ServiceGeneral serviceGeneral) {
+        this.serviceStorage = serviceStorage;
+        this.serviceFile = serviceFile;
+        this.serviceGeneral = serviceGeneral;
+    }
 
     @SuppressWarnings("unchecked")
     @RequestMapping(method = RequestMethod.POST, value = "/saveStorage", produces = "text/plain")
